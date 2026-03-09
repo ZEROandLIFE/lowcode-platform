@@ -21,6 +21,13 @@
           <RedoOutlined /> 重做
         </a-button>
         <a-divider type="vertical" />
+        <a-button 
+          @click="store.toggleGrid"
+          :type="store.state.showGrid ? 'primary' : 'default'"
+        >
+          <BorderOuterOutlined /> 
+          {{ store.state.showGrid ? '隐藏网格' : '显示网格' }}
+        </a-button>
         <a-button @click="showSettings = true">
           <SettingOutlined /> 页面设置
         </a-button>
@@ -73,7 +80,8 @@ import {
   SettingOutlined,
   EyeOutlined,
   SaveOutlined,
-  CloudUploadOutlined
+  CloudUploadOutlined,
+  BorderOuterOutlined
 } from '@ant-design/icons-vue';
 import { useDesignerStore } from '@/stores/designer';
 import { pageApi } from '@/api'; 

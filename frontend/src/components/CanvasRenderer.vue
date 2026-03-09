@@ -1,42 +1,119 @@
 <template>
-  <div
+  <div 
     class="renderer-wrapper"
-    :class="{
+    :class="{ 
       selected: isSelected,
       'is-container': material?.isContainer,
-      dragging: isDragging,
     }"
     :style="wrapperStyle"
     @click.stop="handleClick"
     draggable="true"
     @dragstart="handleDragStart"
-    @dragover.prevent
-    @drop.stop="handleDrop"
+    @dragend="handleDragEnd"
   >
     <!-- 组件标签 -->
     <div class="component-badge" v-if="isSelected">
-      {{ material?.name }}
+      {{ material?.name }} ({{ span }}格)
     </div>
 
-    <!-- 实际组件渲染 -->
-    <component
-      :is="getComponent(schema.type)"
-      v-bind="componentProps"
-      :style="componentStyle"
-    >
-      <!-- 容器组件递归渲染子组件 -->
-      <template v-if="material?.isContainer && schema.children">
-        <CanvasRenderer
-          v-for="child in schema.children"
-          :key="child.id"
-          :schema="child"
-          :depth="depth + 1"
+    <!-- 组件内容 -->
+    <div class="component-content">
+      <!-- 按钮组件 -->
+      <div v-if="schema.type === 'Button'" class="component-inner">
+        <a-button
+          :type="schema.props.type"
+          :size="schema.props.size"
+          :danger="schema.props.danger"
+          :disabled="schema.props.disabled"
+          :block="true"
+          class="renderer-button"
+        >
+          {{ schema.props.text }}
+        </a-button>
+      </div>
+
+      <!-- 文本组件 -->
+      <div v-else-if="schema.type === 'Text'" 
+        class="component-inner text-inner"
+        :style="textStyle"
+      >
+        {{ schema.props.content }}
+      </div>
+
+      <!-- 图片组件 -->
+      <div v-else-if="schema.type === 'Image'" class="component-inner">
+        <img
+          :src="schema.props.src"
+          :alt="schema.props.alt"
+          class="renderer-image"
+          :style="imageStyle"
         />
-        <div v-if="schema.children.length === 0" class="container-placeholder">
-          拖拽组件到此处
-        </div>
-      </template>
-    </component>
+      </div>
+
+      <!-- 输入框组件 -->
+      <div v-else-if="schema.type === 'Input'" class="component-inner">
+        <a-input
+          :placeholder="schema.props.placeholder"
+          :disabled="schema.props.disabled"
+          class="renderer-input"
+        />
+      </div>
+
+      <!-- 下拉选择组件 -->
+      <div v-else-if="schema.type === 'Select'" class="component-inner">
+        <a-select
+          :placeholder="schema.props.placeholder"
+          class="renderer-select"
+        >
+          <a-select-option 
+            v-for="(opt, idx) in schema.props.options" 
+            :key="idx" 
+            :value="opt"
+          >
+            {{ opt }}
+          </a-select-option>
+        </a-select>
+      </div>
+
+      <!-- 卡片组件 -->
+      <div v-else-if="schema.type === 'Card'" class="component-inner">
+        <a-card
+          :title="schema.props.title"
+          :bordered="schema.props.bordered"
+          :hoverable="schema.props.hoverable"
+          class="renderer-card"
+        >
+          <div v-if="schema.children?.length" class="card-children">
+            <CanvasRenderer 
+              v-for="child in schema.children"
+              :key="child.id"
+              :schema="child"
+            />
+          </div>
+          <div v-else class="card-placeholder">
+            拖拽组件到卡片内
+          </div>
+        </a-card>
+      </div>
+
+      <!-- 表格组件 -->
+      <div v-else-if="schema.type === 'Table'" class="component-inner">
+        <a-table
+          :bordered="schema.props.bordered"
+          :pagination="schema.props.pagination"
+          :dataSource="[
+            { key: '1', name: '示例数据1', age: 32 },
+            { key: '2', name: '示例数据2', age: 28 },
+          ]"
+          :columns="[
+            { title: '姓名', dataIndex: 'name', key: 'name' },
+            { title: '年龄', dataIndex: 'age', key: 'age' },
+          ]"
+          class="renderer-table"
+          size="small"
+        />
+      </div>
+    </div>
 
     <!-- 选中时的操作按钮 -->
     <div v-if="isSelected" class="component-actions">
@@ -45,191 +122,229 @@
       </a-button>
     </div>
 
-    <!-- 拖拽指示器 -->
-    <div
-      v-if="dropIndicator.show"
-      class="drop-indicator"
-      :class="dropIndicator.position"
-    />
+    <!-- 网格位置信息 -->
+    <div class="grid-info" v-if="schema.gridPosition">
+      行{{ schema.gridPosition.row }} 列{{ schema.gridPosition.col }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from "vue";
-  import { DeleteOutlined } from "@ant-design/icons-vue";
-  import { Button, Input, Card, Select } from "ant-design-vue";
-  import { useDesignerStore } from "@/stores/designer";
-  import type { ComponentSchema } from "@/types";
+import { computed } from 'vue';
+import { DeleteOutlined } from '@ant-design/icons-vue';
+import { useDesignerStore } from '@/stores/designer';
+import type { ComponentSchema } from '@/types';
+import type { CSSProperties } from 'vue';
 
-  const props = defineProps<{
-    schema: ComponentSchema;
-    depth: number;
-  }>();
+const props = defineProps<{
+  schema: ComponentSchema;
+}>();
 
-  const store = useDesignerStore();
-  const isDragging = ref(false);
-  const dropIndicator = ref({
-    show: false,
-    position: "before" as "before" | "after" | "inside",
-  });
+const store = useDesignerStore();
+const GRID_SIZE = 60; // 固定格子大小
 
-  const material = computed(() =>
-    store.state.materials.find((m) => m.type === props.schema.type)
-  );
+const material = computed(() => 
+  store.state.materials.find(m => m.type === props.schema.type)
+);
 
-  const isSelected = computed(() => store.state.selectedId === props.schema.id);
+const isSelected = computed(() => store.state.selectedId === props.schema.id);
 
-  // 修复：使用 CSSProperties 类型
-  const wrapperStyle = computed(
-    (): Record<string, string> => ({
-      position: "relative",
-      border: isSelected.value ? "2px solid #1890ff" : "2px solid transparent",
-      marginBottom: "8px",
-      padding: "4px",
-      borderRadius: "4px",
-      ...(props.schema.style || {}),
-    })
-  );
+// 获取组件占用的格子数
+const span = computed(() => props.schema.props.span || 4);
 
-  const componentProps = computed(() => {
-    const { style, children, ...rest } = props.schema.props;
-    return {
-      ...rest,
-      style: props.schema.style,
-    };
-  });
-
-  const componentStyle = computed(() => ({
-    pointerEvents: "none" as const,
-    ...props.schema.style,
-  }));
-
-  // 组件映射表
-  const componentMap: Record<string, any> = {
-    Button,
-    Input,
-    Select: Select,
-    Card,
-    Container: "div",
-    Text: "div",
-    Image: "img",
-    Grid: "div",
+// 计算组件样式 - 基于网格坐标，支持高度设置
+const wrapperStyle = computed((): CSSProperties => {
+  const pos = props.schema.gridPosition || { row: 0, col: 0 };
+  const span = props.schema.props.span || 4;
+  const rowSpan = props.schema.props.rowSpan || 1; // 新增：高度占几行
+  
+  return {
+    position: 'absolute',
+    left: (pos.col * GRID_SIZE) + 'px',
+    top: (pos.row * GRID_SIZE) + 'px',
+    width: (span * GRID_SIZE - 4) + 'px',
+    height: (rowSpan * GRID_SIZE - 4) + 'px', // 根据rowSpan计算高度
+    margin: '2px',
+    border: isSelected.value ? '2px solid #1890ff' : '2px solid transparent',
+    borderRadius: '4px',
+    transition: 'all 0.2s',
+    boxSizing: 'border-box',
+    zIndex: isSelected.value ? 10 : 1,
+    background: '#fff',
   };
+});
 
-  function getComponent(type: string) {
-    return componentMap[type] || "div";
-  }
+// 文本样式
+const textStyle = computed((): CSSProperties => ({
+  fontSize: props.schema.props.fontSize || '14px',
+  color: props.schema.props.color || '#000000',
+  textAlign: props.schema.props.align || 'left',
+  fontWeight: props.schema.props.fontWeight || 'normal',
+  padding: '0 12px',
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+}));
 
-  function handleClick() {
-    store.selectComponent(props.schema.id);
-  }
+// 图片样式
+const imageStyle = computed((): CSSProperties => ({
+  width: '100%',
+  height: '100%',
+  objectFit: props.schema.props.objectFit || 'cover',
+  borderRadius: '4px',
+}));
 
-  function handleDelete() {
-    store.removeComponent(props.schema.id);
-  }
+function handleClick() {
+  store.selectComponent(props.schema.id);
+}
 
-  function handleDragStart(e: DragEvent) {
-    isDragging.value = true;
-    e.dataTransfer?.setData("dragId", props.schema.id);
-    e.dataTransfer!.effectAllowed = "move";
-  }
+function handleDelete() {
+  store.removeComponent(props.schema.id);
+}
 
-  function handleDrop(e: DragEvent) {
-    e.stopPropagation();
+function handleDragStart(e: DragEvent) {
+  e.stopPropagation();
+  store.setDragging(true);
+  e.dataTransfer?.setData('dragId', props.schema.id);
+  e.dataTransfer!.effectAllowed = 'move';
+}
 
-    const dragId = e.dataTransfer?.getData("dragId");
-    if (!dragId || dragId === props.schema.id) return;
-
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const relativeY = e.clientY - rect.top;
-    const position =
-      relativeY < rect.height / 3
-        ? "before"
-        : relativeY > (rect.height * 2) / 3
-        ? "after"
-        : "inside";
-    if (position === "inside" && !material.value?.isContainer) {
-      return;
-    }
-
-    store.moveComponent(dragId, props.schema.id, position);
-    dropIndicator.value.show = false;
-  }
+function handleDragEnd() {
+  store.setDragging(false);
+}
 </script>
 
 <style scoped lang="less">
-  .renderer-wrapper {
-    position: relative;
-    transition: all 0.2s;
+.renderer-wrapper {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
 
-    &.selected {
-      background: rgba(24, 144, 255, 0.05);
-    }
+  &.selected {
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
+    z-index: 10;
+  }
 
-    &.is-container {
-      min-height: 60px;
-      background: rgba(0, 0, 0, 0.02);
-      border: 1px dashed #d9d9d9;
-      padding: 16px;
-    }
+  .component-badge {
+    position: absolute;
+    top: -22px;
+    left: 0;
+    background: #1890ff;
+    color: #fff;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    z-index: 11;
+    pointer-events: none;
+    white-space: nowrap;
+  }
 
-    &:hover:not(.selected) {
-      border-color: #d9d9d9;
-    }
+  .component-actions {
+    position: absolute;
+    top: -22px;
+    right: 0;
+    z-index: 11;
+    display: none;
+  }
 
-    .component-badge {
-      position: absolute;
-      top: -12px;
-      left: 8px;
-      background: #1890ff;
-      color: #fff;
-      padding: 2px 8px;
-      font-size: 12px;
-      border-radius: 4px;
-      z-index: 10;
-    }
+  &.selected .component-actions {
+    display: block;
+  }
 
-    .component-actions {
-      position: absolute;
-      top: -12px;
-      right: 8px;
-      z-index: 10;
-      display: none;
-    }
+  .grid-info {
+    position: absolute;
+    bottom: -20px;
+    right: 0;
+    font-size: 10px;
+    color: #8c8c8c;
+    background: rgba(255,255,255,0.9);
+    padding: 2px 6px;
+    border-radius: 2px;
+    z-index: 11;
+    pointer-events: none;
+  }
 
-    &.selected .component-actions {
-      display: block;
-    }
+  .component-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
 
-    .container-placeholder {
-      text-align: center;
-      padding: 24px;
-      color: #bfbfbf;
-      border: 2px dashed #d9d9d9;
-      border-radius: 4px;
-    }
+  .component-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
 
-    .drop-indicator {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: #1890ff;
-      z-index: 20;
-
-      &.before {
-        top: -2px;
-      }
-      &.after {
-        bottom: -2px;
-      }
-      &.inside {
-        top: 50%;
-        transform: translateY(-50%);
-        height: 100%;
-        background: rgba(24, 144, 255, 0.1);
-        border: 2px dashed #1890ff;
-      }
+  .renderer-button {
+    :deep(.ant-btn) {
+      width: 100%;
+      height: 100%;
     }
   }
+
+  .renderer-input {
+    :deep(.ant-input) {
+      width: 100%;
+    }
+  }
+
+  .renderer-select {
+    width: 100%;
+    
+    :deep(.ant-select-selector) {
+      width: 100% !important;
+    }
+  }
+
+  .renderer-card {
+    width: 100%;
+    height: 100%;
+    
+    :deep(.ant-card-body) {
+      padding: 12px;
+      height: calc(100% - 46px);
+      overflow: auto;
+    }
+  }
+
+  .renderer-table {
+    width: 100%;
+    height: 100%;
+    
+    :deep(.ant-table) {
+      font-size: 12px;
+    }
+  }
+
+  .text-inner {
+    box-sizing: border-box;
+  }
+
+  .renderer-image {
+    display: block;
+  }
+
+  .card-children {
+    min-height: 30px;
+    position: relative;
+  }
+
+  .card-placeholder {
+    text-align: center;
+    padding: 12px;
+    color: #bfbfbf;
+    border: 1px dashed #d9d9d9;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+}
 </style>

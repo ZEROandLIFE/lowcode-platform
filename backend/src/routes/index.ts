@@ -75,9 +75,10 @@ router.get("/pages/:id", async (req, res) => {
 
     // 详细打印 schema 内容
     console.log(
-      "[GET /pages/:id] Schema:",
-      JSON.stringify(page.schema, null, 2)
+      "[GET /pages/:id] Schema components:",
+      page.schema?.components?.length || 0
     );
+
     res.json({ success: true, data: page });
   } catch (error) {
     console.error("[GET /pages/:id] Error:", error);
@@ -98,22 +99,12 @@ router.put("/pages/:id", async (req, res) => {
       "[PUT /pages/:id] Schema components count:",
       schema?.components?.length || 0
     );
-    console.log(
-      "[PUT /pages/:id] Full schema:",
-      JSON.stringify(schema, null, 2)
-    );
 
     // 先检查页面是否存在
     const existingPage = await PageService.getPage(id);
-    console.log(
-      "[PUT /pages/:id] Existing page:",
-      existingPage ? "found" : "NOT FOUND"
-    );
-    if (existingPage) {
-      console.log(
-        "[PUT /pages/:id] Current schema:",
-        JSON.stringify(existingPage.schema, null, 2)
-      );
+    if (!existingPage) {
+      console.error("[PUT /pages/:id] Page not found:", id);
+      return res.status(404).json({ success: false, error: "页面不存在" });
     }
 
     const page = await PageService.updatePage(id, {
@@ -122,19 +113,14 @@ router.put("/pages/:id", async (req, res) => {
       isPublished,
     });
 
-    console.log("[PUT /pages/:id] Update result:", page ? "success" : "FAILED");
-
     if (!page) {
-      console.error("[PUT /pages/:id] Page not found or update failed");
-      return res
-        .status(404)
-        .json({ success: false, error: "页面不存在或更新失败" });
+      console.error("[PUT /pages/:id] Update failed");
+      return res.status(500).json({ success: false, error: "更新失败" });
     }
 
-    // 验证更新后的数据
     console.log(
-      "[PUT /pages/:id] Updated schema:",
-      JSON.stringify(page.schema, null, 2)
+      "[PUT /pages/:id] Updated successfully, components:",
+      page.schema?.components?.length || 0
     );
     console.log("[PUT /pages/:id] ====================\n");
 

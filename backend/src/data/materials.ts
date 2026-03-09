@@ -1,7 +1,8 @@
 import { ComponentMaterial } from "../types/index.js";
 
+// 三种固定宽度：4(1/3), 6(半宽), 12(全宽)
 export const componentMaterials: ComponentMaterial[] = [
-  // 基础组件
+  // 基础组件 - 小尺寸 (4格)
   {
     type: "Button",
     name: "按钮",
@@ -10,11 +11,12 @@ export const componentMaterials: ComponentMaterial[] = [
     description: "点击触发操作的按钮",
     defaultProps: {
       text: "按钮",
-      type: "default",
+      type: "primary",
       size: "middle",
-      block: false,
+      span: 4, // 固定占4格
       disabled: false,
       danger: false,
+      rowSpan: 1,
     },
     propsConfig: [
       {
@@ -29,7 +31,7 @@ export const componentMaterials: ComponentMaterial[] = [
         label: "按钮类型",
         type: "select",
         options: ["default", "primary", "dashed", "link", "text"],
-        defaultValue: "default",
+        defaultValue: "primary",
       },
       {
         key: "size",
@@ -38,7 +40,6 @@ export const componentMaterials: ComponentMaterial[] = [
         options: ["small", "middle", "large"],
         defaultValue: "middle",
       },
-      { key: "block", label: "块状按钮", type: "boolean", defaultValue: false },
       {
         key: "danger",
         label: "危险样式",
@@ -60,6 +61,8 @@ export const componentMaterials: ComponentMaterial[] = [
       color: "#000000",
       align: "left",
       fontWeight: "normal",
+      span: 4,
+      rowSpan: 1,
     },
     propsConfig: [
       {
@@ -72,7 +75,8 @@ export const componentMaterials: ComponentMaterial[] = [
       {
         key: "fontSize",
         label: "字体大小",
-        type: "string",
+        type: "select",
+        options: ["12px", "14px", "16px", "18px", "20px", "24px"],
         defaultValue: "14px",
       },
       {
@@ -97,48 +101,8 @@ export const componentMaterials: ComponentMaterial[] = [
       },
     ],
   },
-  {
-    type: "Image",
-    name: "图片",
-    icon: "🖼️",
-    category: "basic",
-    description: "图片展示组件",
-    defaultProps: {
-      src: "https://via.placeholder.com/300x200",
-      alt: "图片",
-      width: "100%",
-      height: "auto",
-      objectFit: "cover",
-      borderRadius: "0px",
-    },
-    propsConfig: [
-      {
-        key: "src",
-        label: "图片地址",
-        type: "string",
-        defaultValue: "https://via.placeholder.com/300x200",
-        required: true,
-      },
-      { key: "alt", label: "替代文本", type: "string", defaultValue: "图片" },
-      { key: "width", label: "宽度", type: "string", defaultValue: "100%" },
-      { key: "height", label: "高度", type: "string", defaultValue: "auto" },
-      {
-        key: "objectFit",
-        label: "填充模式",
-        type: "select",
-        options: ["cover", "contain", "fill", "none"],
-        defaultValue: "cover",
-      },
-      {
-        key: "borderRadius",
-        label: "圆角",
-        type: "string",
-        defaultValue: "0px",
-      },
-    ],
-  },
 
-  // 表单组件
+  // 中等组件 - 中尺寸 (6格)
   {
     type: "Input",
     name: "输入框",
@@ -146,28 +110,19 @@ export const componentMaterials: ComponentMaterial[] = [
     category: "form",
     description: "单行文本输入",
     defaultProps: {
-      label: "输入框",
       placeholder: "请输入内容",
-      required: false,
+      span: 6,
       disabled: false,
-      allowClear: true,
+      rowSpan: 1,
     },
     propsConfig: [
-      { key: "label", label: "标签", type: "string", defaultValue: "输入框" },
       {
         key: "placeholder",
         label: "占位符",
         type: "string",
         defaultValue: "请输入内容",
       },
-      { key: "required", label: "必填", type: "boolean", defaultValue: false },
       { key: "disabled", label: "禁用", type: "boolean", defaultValue: false },
-      {
-        key: "allowClear",
-        label: "允许清空",
-        type: "boolean",
-        defaultValue: true,
-      },
     ],
   },
   {
@@ -177,110 +132,53 @@ export const componentMaterials: ComponentMaterial[] = [
     category: "form",
     description: "下拉选择器",
     defaultProps: {
-      label: "选择器",
       placeholder: "请选择",
-      options: [
-        { label: "选项1", value: "1" },
-        { label: "选项2", value: "2" },
-      ],
-      allowClear: true,
+      span: 6,
+      rowSpan: 1,
+      options: ["选项1", "选项2", "选项3"],
     },
     propsConfig: [
-      { key: "label", label: "标签", type: "string", defaultValue: "选择器" },
       {
         key: "placeholder",
         label: "占位符",
         type: "string",
         defaultValue: "请选择",
       },
+    ],
+  },
+  {
+    type: "Image",
+    name: "图片",
+    icon: "🖼️",
+    category: "basic",
+    description: "图片展示组件",
+    defaultProps: {
+      src: "https://via.placeholder.com/400x200",
+      alt: "图片",
+      span: 6,
+      rowSpan: 1,
+      objectFit: "cover",
+    },
+    propsConfig: [
       {
-        key: "allowClear",
-        label: "允许清空",
-        type: "boolean",
-        defaultValue: true,
+        key: "src",
+        label: "图片地址",
+        type: "string",
+        defaultValue: "https://via.placeholder.com/400x200",
+        required: true,
+      },
+      { key: "alt", label: "替代文本", type: "string", defaultValue: "图片" },
+      {
+        key: "objectFit",
+        label: "填充模式",
+        type: "select",
+        options: ["cover", "contain", "fill", "none"],
+        defaultValue: "cover",
       },
     ],
   },
 
-  // 布局组件
-  {
-    type: "Container",
-    name: "容器",
-    icon: "📦",
-    category: "layout",
-    description: "可嵌套其他组件的容器",
-    isContainer: true,
-    defaultProps: {
-      direction: "vertical",
-      gap: 16,
-      padding: "16px",
-      background: "#ffffff",
-      borderRadius: "8px",
-      border: "1px solid #d9d9d9",
-    },
-    propsConfig: [
-      {
-        key: "direction",
-        label: "排列方向",
-        type: "select",
-        options: ["vertical", "horizontal"],
-        defaultValue: "vertical",
-      },
-      { key: "gap", label: "间距", type: "number", defaultValue: 16 },
-      { key: "padding", label: "内边距", type: "string", defaultValue: "16px" },
-      {
-        key: "background",
-        label: "背景色",
-        type: "color",
-        defaultValue: "#ffffff",
-      },
-      {
-        key: "borderRadius",
-        label: "圆角",
-        type: "string",
-        defaultValue: "8px",
-      },
-      {
-        key: "border",
-        label: "边框",
-        type: "string",
-        defaultValue: "1px solid #d9d9d9",
-      },
-    ],
-  },
-  {
-    type: "Grid",
-    name: "栅格",
-    icon: "⊞",
-    category: "layout",
-    description: "24列栅格布局",
-    isContainer: true,
-    maxChildren: 4,
-    defaultProps: {
-      columns: 2,
-      gutter: 16,
-      align: "top",
-    },
-    propsConfig: [
-      {
-        key: "columns",
-        label: "列数",
-        type: "select",
-        options: ["1", "2", "3", "4"],
-        defaultValue: "2",
-      },
-      { key: "gutter", label: "间距", type: "number", defaultValue: 16 },
-      {
-        key: "align",
-        label: "对齐",
-        type: "select",
-        options: ["top", "middle", "bottom"],
-        defaultValue: "top",
-      },
-    ],
-  },
-
-  // 高级组件
+  // 大型组件 - 全宽 (12格)
   {
     type: "Card",
     name: "卡片",
@@ -292,7 +190,8 @@ export const componentMaterials: ComponentMaterial[] = [
       title: "卡片标题",
       bordered: true,
       hoverable: false,
-      size: "default",
+      rowSpan: 1,
+      span: 12,
     },
     propsConfig: [
       { key: "title", label: "标题", type: "string", defaultValue: "卡片标题" },
@@ -308,12 +207,32 @@ export const componentMaterials: ComponentMaterial[] = [
         type: "boolean",
         defaultValue: false,
       },
+    ],
+  },
+  {
+    type: "Table",
+    name: "表格",
+    icon: "📊",
+    category: "advanced",
+    description: "数据表格",
+    defaultProps: {
+      span: 12,
+      bordered: true,
+      rowSpan: 1,
+      pagination: false,
+    },
+    propsConfig: [
       {
-        key: "size",
-        label: "尺寸",
-        type: "select",
-        options: ["default", "small"],
-        defaultValue: "default",
+        key: "bordered",
+        label: "显示边框",
+        type: "boolean",
+        defaultValue: true,
+      },
+      {
+        key: "pagination",
+        label: "分页",
+        type: "boolean",
+        defaultValue: false,
       },
     ],
   },

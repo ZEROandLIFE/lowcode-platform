@@ -10,25 +10,10 @@ const MONGODB_URI =
 
 // 中间件
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" })); // 增加限制以支持大的 schema
 
 // 路由
 app.use("/api", routes);
-
-// 连接 MongoDB
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    console.log("✅ MongoDB 连接成功");
-    app.listen(PORT, () => {
-      console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
-      console.log(`📦 组件物料库已加载`);
-    });
-  })
-  .catch((error) => {
-    console.error("❌ MongoDB 连接失败:", error);
-    process.exit(1);
-  });
 
 // 错误处理
 app.use(
@@ -38,7 +23,25 @@ app.use(
     res: express.Response,
     next: express.NextFunction
   ) => {
-    console.error(err.stack);
+    console.error("Error:", err);
     res.status(500).json({ success: false, error: "服务器内部错误" });
   }
 );
+
+// 连接 MongoDB
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => {
+    console.log("✅ MongoDB 连接成功");
+    app.listen(PORT, () => {
+      console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
+      console.log(`📦 网格布局系统已启用`);
+      console.log(`   - 固定 12 列`);
+      console.log(`   - 每格 60px`);
+      console.log(`   - 三种尺寸: 4格(小) / 6格(中) / 12格(大)`);
+    });
+  })
+  .catch((error) => {
+    console.error("❌ MongoDB 连接失败:", error);
+    process.exit(1);
+  });
